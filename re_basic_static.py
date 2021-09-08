@@ -26,9 +26,15 @@ def extract_imports(exe_file_name):
     """
     find all of the imports within an executable file
     :param exe_file_name: string path to the executable
-    :return: lst of string names of imports
+    :return: dict of string names of dlls to string names of imports
     """
-    return ['Error: Not yet implemented']
+    pe = pefile.PE(exe_file_name)
+
+    imports = dict()
+    for dll in pe.DIRECTORY_ENTRY_IMPORT:
+        imports[dll.dll.decode()] = [imp.name.decode() for imp in dll.imports]
+
+    return imports
 
 
 def extract_compile_info(exe_file_name):
@@ -37,6 +43,15 @@ def extract_compile_info(exe_file_name):
     :param exe_file_name: string path to the executable
     :return: dict of compiler information
     """
+    # sigs = peutils.SignatureDatabase(exe_file_name)
+    # print(sigs)
+    pe = pefile.PE(exe_file_name)
+    # print(pe.FILE_HEADER)
+    # print('*'*10)
+    # print(pe.DOS_HEADER)
+    # print('*'*10)
+    # print(*(s for s in pe.sections), sep='\n')
+    # print('*'*10)
     return {'Error': 'Not yet implemented'}
 
 
@@ -85,7 +100,7 @@ def main():
         compile_info = extract_compile_info(args.exe_file_name)
         for label in compile_info:
             print(label, compile_info[label], sep=':')
-        print('-'*100)
+        print('-' * 100)
 
     # strings section
     if args.strings or args.all:
@@ -94,8 +109,8 @@ def main():
             strings = extract_strings(args.exe_file_name, args.string_length)
         else:
             strings = extract_strings(args.exe_file_name)
-        print(*(s for s in strings), sep='\n')
-        print('-'*100)
+        print(*(s for s in strings), sep='\n\t')
+        print('-' * 100)
 
     # noteworthy strings section
     if args.note_string or args.all:
@@ -106,15 +121,15 @@ def main():
             else:
                 strings = extract_strings(args.exe_file_name)
         note_strings = eval_strings(strings)  # strings will be defined in the strings section or above statement
-        print(*('{}:\n{}\n'.format(label, "\n".join(note_strings[label])) for label in note_strings), sep='\n')
-        print('-'*100)
+        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_strings[label])) for label in note_strings), sep='\n')
+        print('-' * 100)
 
     # imports section
     if args.imports or args.all:
         print('\nImports found:\n')
         exe_imports = extract_imports(args.exe_file_name)
-        print(*(i for i in exe_imports))
-        print('-'*100)
+        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports), sep='\n')
+        print('-' * 100)
 
     # noteworthy imports section
     if args.note_imports or args.all:
@@ -122,8 +137,8 @@ def main():
         if not args.imports and not args.all:
             exe_imports = extract_imports(args.exe_file_name)
         note_imports = eval_imports(exe_imports)  # imports will be defined in the imports section or above statement
-        print(*('{}:\n{}\n'.format(label, "\n".join(note_imports[label])) for label in note_imports), sep='\n')
-        print('-'*100)
+        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports), sep='\n')
+        print('-' * 100)
 
 
 if __name__ == '__main__':
