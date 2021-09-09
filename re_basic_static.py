@@ -43,8 +43,6 @@ def extract_compile_info(exe_file_name):
     :param exe_file_name: string path to the executable
     :return: dict of compiler information
     """
-    # sigs = peutils.SignatureDatabase(exe_file_name)
-    # print(sigs)
     pe = pefile.PE(exe_file_name)
     # print(pe.FILE_HEADER)
     # print('*'*10)
@@ -90,17 +88,23 @@ def main():
     parser.add_argument('-n', '--note_string', action='store_true', help='enable noteworthy string parsing')
     parser.add_argument('-i', '--imports', action='store_true', help='enable import search')
     parser.add_argument('-m', '--note_imports', action='store_true', help='enable typical malware import parsing')
-    parser.add_argument('-a', '--all', action='store_true', help='enable all modes')  # todo add option for an output
+    parser.add_argument('-a', '--all', action='store_true', help='enable all modes')
+    parser.add_argument('--out', help='A file to save the output to')
     parser.add_argument('--string-length', help='The minimum length of string to check for the strings section')
     args = parser.parse_args()
+
+    out_str = f'Basic Static analysis results for {args.exe_file_name}:\n'
 
     # compiler section
     if args.compiler or args.all:
         print('\nCompiler information:\n')
+        out_str += '\nCompiler information:\n'
         compile_info = extract_compile_info(args.exe_file_name)
         for label in compile_info:
             print(label, compile_info[label], sep=':')
+            out_str += ':'.join([label, compile_info[label]]) + '\n'
         print('-' * 100)
+        out_str += '-'*100 + '\n'
 
     # strings section
     if args.strings or args.all:
@@ -111,6 +115,7 @@ def main():
             strings = extract_strings(args.exe_file_name)
         print(*(s for s in strings), sep='\n\t')
         print('-' * 100)
+        out_str += '\nStrings found:\n{}\n{}\n'.format('\n\t'.join(s for s in strings), '-' * 100)
 
     # noteworthy strings section
     if args.note_string or args.all:
@@ -123,6 +128,9 @@ def main():
         note_strings = eval_strings(strings)  # strings will be defined in the strings section or above statement
         print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_strings[label])) for label in note_strings), sep='\n')
         print('-' * 100)
+        out_str += '\nNoteworthy strings found:\n'
+        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(note_strings[label])) for label in note_strings)
+        out_str += f'\n{"-"*100}\n'
 
     # imports section
     if args.imports or args.all:
@@ -130,6 +138,9 @@ def main():
         exe_imports = extract_imports(args.exe_file_name)
         print(*('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports), sep='\n')
         print('-' * 100)
+        out_str += '\nImports found:\n'
+        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports)
+        out_str += f'\n{"-"*100}\n'
 
     # noteworthy imports section
     if args.note_imports or args.all:
@@ -139,6 +150,16 @@ def main():
         note_imports = eval_imports(exe_imports)  # imports will be defined in the imports section or above statement
         print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports), sep='\n')
         print('-' * 100)
+        out_str += '\nTypical malware imports found:\n'
+        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports)
+        out_str += f'\n{"-"*100}\n'
+
+    # save out_str if there was an output file selected
+    if args.out:
+        print(f'Saving to {args.out}...')
+        with open(args.out, 'w') as f:
+            f.write(out_str)
+        print('Saved')
 
 
 if __name__ == '__main__':
