@@ -4,6 +4,7 @@
 # built-in imports
 import re  # used to extract strings from exe
 import argparse  # used to parse the commandline arguments
+import os.path  # used to check if the file exists
 # pip libraries
 import pefile  # used to read the pe headers of exe files
 
@@ -104,73 +105,110 @@ def main():
     parser.add_argument('--string-length', help='The minimum length of string to check for the strings section')
     args = parser.parse_args()
 
+    # check if the file exists before continuing
+    if not os.path.exists(args.exe_file_name):
+        print(f'Could not find the file "{args.exe_file_name}"')
+        return
+
     out_str = f'Basic Static analysis results for {args.exe_file_name}:\n'
 
     # compiler section
     if args.compiler or args.all:
         print('\nCompiler information:\n')
         out_str += '\nCompiler information:\n'
-        compile_info = extract_compile_info(args.exe_file_name)
-        for label in compile_info:
-            print(label, compile_info[label], sep=':')
-            out_str += ':'.join([label, compile_info[label]]) + '\n'
-        print('-' * 100)
-        out_str += '-'*100 + '\n'
+        try:
+            compile_info = extract_compile_info(args.exe_file_name)
+            for label in compile_info:
+                print(label, compile_info[label], sep=':')
+                out_str += ':'.join([label, compile_info[label]]) + '\n'
+        except Exception as e:
+            print(f'An error occurred:\n{e}')
+            out_str += f'An error occurred:\n{e}'
+        finally:
+            print('-' * 100)
+            out_str += '-'*100 + '\n'
 
     # strings section
     if args.strings or args.all:
-        print('\nStrings found:\n')
-        if args.string_length:
-            strings = extract_strings(args.exe_file_name, args.string_length)
-        else:
-            strings = extract_strings(args.exe_file_name)
-        print(*(s for s in strings), sep='\n\t')
-        print('-' * 100)
-        out_str += '\nStrings found:\n{}\n{}\n'.format('\n\t'.join(s for s in strings), '-' * 100)
-
-    # noteworthy strings section
-    if args.note_string or args.all:
-        print('\nNoteworthy strings found:\n')
-        if not args.strings and not args.all:
+        print('\nStrings found:')
+        out_str += '\nStrings found:\n\t'
+        try:
             if args.string_length:
                 strings = extract_strings(args.exe_file_name, args.string_length)
             else:
                 strings = extract_strings(args.exe_file_name)
-        note_strings = eval_strings(strings)  # strings will be defined in the strings section or above statement
-        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_strings[label])) for label in note_strings), sep='\n')
-        print('-' * 100)
+            print('', *(s for s in strings), sep='\n\t')
+            out_str += '\n\t'.join(s for s in strings) + '\n'
+        except Exception as e:
+            print(f'An error occurred:\n{e}')
+            out_str += f'An error occurred:\n{e}'
+        finally:
+            print('-' * 100)
+            out_str += '-'*100 + '\n'
+
+    # noteworthy strings section
+    if args.note_string or args.all:
+        print('\nNoteworthy strings found:\n')
         out_str += '\nNoteworthy strings found:\n'
-        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(note_strings[label])) for label in note_strings)
-        out_str += f'\n{"-"*100}\n'
+        try:
+            if not args.strings and not args.all:
+                if args.string_length:
+                    strings = extract_strings(args.exe_file_name, args.string_length)
+                else:
+                    strings = extract_strings(args.exe_file_name)
+            note_strings = eval_strings(strings)  # strings will be defined in the strings section or above statement
+            print(*('{}:\n\t{}\n'.format(lab, "\n\t".join(note_strings[lab])) for lab in note_strings), sep='\n')
+            out_str += '\n'.join('{}:\n\t{}\n'.format(lab, "\n\t".join(note_strings[lab])) for lab in note_strings)
+        except Exception as e:
+            print(f'An error occurred:\n{e}')
+            out_str += f'An error occurred:\n{e}'
+        finally:
+            print('-' * 100)
+            out_str += '-'*100 + '\n'
 
     # imports section
     if args.imports or args.all:
         print('\nImports found:\n')
-        exe_imports = extract_imports(args.exe_file_name)
-        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports), sep='\n')
-        print('-' * 100)
         out_str += '\nImports found:\n'
-        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports)
-        out_str += f'\n{"-"*100}\n'
+        try:
+            exe_imports = extract_imports(args.exe_file_name)
+            print(*('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports), sep='\n')
+            out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(exe_imports[label])) for label in exe_imports)
+            out_str += '\n'
+        except Exception as e:
+            print(f'An error occurred:\n{e}')
+            out_str += f'An error occurred:\n{e}'
+        finally:
+            print('-' * 100)
+            out_str += '-'*100 + '\n'
 
     # noteworthy imports section
     if args.note_imports or args.all:
         print('\nTypical malware imports found:\n')
-        if not args.imports and not args.all:
-            exe_imports = extract_imports(args.exe_file_name)
-        note_imports = eval_imports(exe_imports)  # imports will be defined in the imports section or above statement
-        print(*('{}\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports), sep='\n')
-        print('-' * 100)
         out_str += '\nTypical malware imports found:\n'
-        out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports)
-        out_str += f'\n{"-"*100}\n'
+        try:
+            if not args.imports and not args.all:
+                exe_imports = extract_imports(args.exe_file_name)
+            note_imports = eval_imports(exe_imports)  # imports will be defined in the imports section or above
+            print(*('{}\n\t{}\n'.format(lab, "\n\t".join(note_imports[lab])) for lab in note_imports), sep='\n')
+            out_str += '\n'.join('{}:\n\t{}\n'.format(lab, "\n\t".join(note_imports[lab])) for lab in note_imports)
+            out_str += '\n'
+        except Exception as e:
+            print(f'An error occurred:\n{e}')
+            out_str += f'An error occurred:\n{e}'
+        finally:
+            print('-' * 100)
+            out_str += '-'*100 + '\n'
 
     # save out_str if there was an output file selected
     if args.out:
         print(f'Saving to {args.out}...')
-        with open(args.out, 'w') as f:
-            f.write(out_str)
-        print('Saved')
+        try:
+            with open(args.out, 'w') as f:
+                f.write(out_str)
+            print('Saved')
+        except Exception as e:
+            print(f'An error occurred while saving the file: {e}')
 
 
 if __name__ == '__main__':
