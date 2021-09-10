@@ -1,0 +1,9 @@
+Kernel32:File management
+WSock32:Internet processes
+Ws2_32:Internet processes
+Wininet:Advanced internet processes
+LoadLibrary:Find a library
+GetProcAddress:Find a process
+Advapi32:Service and registry management
+User32:Window management
+shell32:Commandline processes

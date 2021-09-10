@@ -8,6 +8,9 @@ import argparse  # used to parse the commandline arguments
 import pefile  # used to read the pe headers of exe files
 
 
+IMPORTS_DICT = "common_imports.txt"  # name of the file with common imports in it
+
+
 def extract_strings(exe_file_name, min_len=4):
     """
     find all of the strings within an executable file
@@ -71,7 +74,15 @@ def eval_imports(exe_imports):
     :param exe_imports: lst of string imports
     :return: dict of lst of string imports
     """
-    return {'Error': ['Not yet implemented']}
+    with open(IMPORTS_DICT) as f:
+        imports_dict = {line.split(':')[0].upper() + '.dll': line.split(':')[1].strip() for line in f}
+
+    return_dict = dict()
+    for dll in exe_imports:
+        if dll in imports_dict:
+            return_dict[imports_dict[dll] + ':\n' + dll] = exe_imports[dll]
+
+    return return_dict
 
 
 def main():
@@ -148,7 +159,7 @@ def main():
         if not args.imports and not args.all:
             exe_imports = extract_imports(args.exe_file_name)
         note_imports = eval_imports(exe_imports)  # imports will be defined in the imports section or above statement
-        print(*('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports), sep='\n')
+        print(*('{}\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports), sep='\n')
         print('-' * 100)
         out_str += '\nTypical malware imports found:\n'
         out_str += '\n'.join('{}:\n\t{}\n'.format(label, "\n\t".join(note_imports[label])) for label in note_imports)
