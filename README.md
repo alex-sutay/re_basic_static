@@ -28,3 +28,12 @@ optional arguments: <br>
                         section
 
 <!--I'll add sections for use and function naming later-->
+
+# Configurations
+## noteworthy imports section
+This section is controlled by a text file. By default, it's called
+common_imports.txt. I went with a text file instead of a JSON
+to make it easier to edit. The format is "dllname:the description
+of the dll". Do not include ".dll" in the dll name, it's added
+programmatically. The case doesn't matter, pefile reads them all
+as upper case, so the program converts to caps automatically.
