@@ -65,7 +65,37 @@ def eval_strings(exe_strings):
     :param exe_strings: lst of strings
     :return: dict of lst of interesting strings
     """
-    return {'Error': ['Not yet implemented']}
+    rtn_dict = dict()
+
+    paths = []
+    files = []
+    urls = []
+    ips = []
+    keys = []
+    for string in exe_strings:
+        if re.match(r'[a-zA-Z]:\\((?:.*?\\)*).*', string):
+            paths.append(string)
+        if re.match(r'([a-zA-Z0-9_/\\]+)\.(?!dll)(\w+)$', string):
+            files.append(string)
+        if re.match(r'(http|https)://[a-zA-Z./]+', string):
+            urls.append(string)
+        if re.match(r'^([0-9]+).+([0-9]+)[a-zA-Z./]*', string):
+            ips.append(string)
+        if re.match(r'HKEY[a-zA-Z/\\_]+', string):
+            keys.append(string)
+    if paths:
+        rtn_dict['Possible Absolute File Paths'] = paths
+    if files:
+        rtn_dict['Possible File Names / Relative Paths'] = files
+    if urls:
+        rtn_dict['Possible urls'] = urls
+    if keys:
+        rtn_dict['Possible Registry Keys'] = keys
+
+    if not rtn_dict:
+        rtn_dict = {'Nothing found': ['No possible file paths, file names, urls, or IPs found']}
+
+    return rtn_dict
 
 
 def eval_imports(exe_imports):
