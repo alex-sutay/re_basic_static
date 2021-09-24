@@ -5,8 +5,10 @@
 import re  # used to extract strings from exe
 import argparse  # used to parse the commandline arguments
 import os.path  # used to check if the file exists
+import datetime
 # pip libraries
 import pefile  # used to read the pe headers of exe files
+import peutils  # used to read the signatures to find the compiler / packer
 
 
 IMPORTS_DICT = "common_imports.txt"  # name of the file with common imports in it
@@ -48,19 +50,22 @@ def extract_compile_info(exe_file_name):
     :return: dict of compiler information
     """
     pe = pefile.PE(exe_file_name)
-    # print(pe.FILE_HEADER)
-    # print('*'*10)
-    # print(pe.DOS_HEADER)
-    # print('*'*10)
-    # print(*(s for s in pe.sections), sep='\n')
-    # print('*'*10)
-    return {'Error': 'Not yet implemented'}
+    rtn_dict = dict()
+
+    sigs = peutils.SignatureDatabase('sigs.txt')
+    matches = sigs.match_all(pe, ep_only=True)
+    rtn_dict['Compiler'] = matches[0][0] if matches else 'Not recognized'
+
+    compile_time = hex(pe.FILE_HEADER.TimeDateStamp)
+    rtn_dict['Compile Time'] = str(datetime.datetime.utcfromtimestamp(float(int(compile_time, 16))))
+
+    return rtn_dict
 
 
 def eval_strings(exe_strings):
     """
     given a list of strings, find the strings that are of particular interest
-    currently looks for IPs, URLs, file paths, and registry keys TODO
+    currently looks for IPs, URLs, file paths, and registry keys
     return is in the form {'label': ['string_1', string_2', ...], ...}
     :param exe_strings: lst of strings
     :return: dict of lst of interesting strings
@@ -149,7 +154,7 @@ def main():
         try:
             compile_info = extract_compile_info(args.exe_file_name)
             for label in compile_info:
-                print(label, compile_info[label], sep=':')
+                print(label, compile_info[label], sep=': ')
                 out_str += ':'.join([label, compile_info[label]]) + '\n'
         except Exception as e:
             print(f'An error occurred:\n{e}')
