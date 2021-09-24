@@ -12,6 +12,7 @@ import peutils  # used to read the signatures to find the compiler / packer
 
 
 IMPORTS_DICT = "common_imports.txt"  # name of the file with common imports in it
+SIGS_DATABASE = "sigs.txt"
 
 
 def extract_strings(exe_file_name, min_len=4):
@@ -52,7 +53,7 @@ def extract_compile_info(exe_file_name):
     pe = pefile.PE(exe_file_name)
     rtn_dict = dict()
 
-    sigs = peutils.SignatureDatabase('sigs.txt')
+    sigs = peutils.SignatureDatabase(SIGS_DATABASE)
     matches = sigs.match_all(pe, ep_only=True)
     rtn_dict['Compiler'] = matches[0][0] if matches else 'Not recognized'
 
