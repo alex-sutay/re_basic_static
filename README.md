@@ -6,7 +6,7 @@ pip libraries:
 pefile
 
 # Usage
-usage: re_basic_static.py [-h] [-c] [-s] [-n] [-i] [-m] [-a]
+usage: re_basic_static.py [-h] [-c] [-s] [-n] [-i] [-m] [-a] [--out OUT]
                           [--string-length STRING_LENGTH]
                           exe_file
 
