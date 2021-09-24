@@ -23,6 +23,7 @@ optional arguments: <br>
   -i, --imports         enable import search<br>
   -m, --note_imports    enable typical malware import parsing<br>
   -a, --all             enable all modes<br>
+  --out OUT             A file to save the output to<br>
   --string-length STRING_LENGTH
                         The minimum length of string to check for the strings 
                         section
