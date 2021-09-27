@@ -1,5 +1,5 @@
 # re_basic_static
-A tool to simply basic static analysis in reverse engineering
+A tool to simplify basic static analysis in reverse engineering
 
 # Dependencies
 pip libraries:
